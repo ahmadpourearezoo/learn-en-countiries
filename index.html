@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://flagcdn.com">
+<link rel="preconnect" href="https://nationalanthems.info">
+<title>World Atlas | Countries and Capitals</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--bg:#f7f2e8;--card:#fffdf8;--ink:#302516;--muted:#8b795d;--gold:#b88932;--gold2:#e4c77d;--line:#eadfc9;--green:#24866b}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:linear-gradient(135deg,#fbf8f0,#f3ead8);font-family:Tahoma,Arial,sans-serif;color:var(--ink)}
+.wrap{max-width:1250px;margin:auto}
+header{background:linear-gradient(115deg,#342613,#71501d 58%,#b58a3b);color:#fff;padding:14px 18px 20px;box-shadow:0 5px 22px #5b431d30}
+.profilebar{max-width:1250px;margin:0 auto 15px;display:flex;direction:ltr;align-items:center;justify-content:space-between;gap:14px;padding:10px 14px;border:1px solid #ffffff45;border-radius:17px;background:#ffffff12}
+.profile{display:flex;align-items:center;gap:11px;min-width:0}
+.profile.student{order:2;text-align:right;justify-content:flex-end}
+.profile.teacher{order:1;text-align:left;justify-content:flex-start}
+.profile img{width:66px;height:66px;object-fit:contain;object-position:center;background:#fff;border-radius:50%;border:3px solid #f0d58e;box-shadow:0 0 0 3px #ffffff28;flex:0 0 auto}
+.profile .role{display:block;font-size:11px;color:#f3dfb3;margin-bottom:4px}
+.profile strong{font-size:15px;white-space:nowrap}
+.profile-details{display:flex;flex-direction:column}
+h1{font-size:24px;margin:0 0 7px}header p{margin:0;color:#f7e9c8;font-size:13px;line-height:1.9}
+.stats{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.stat{background:#ffffff18;border:1px solid #ffffff38;padding:8px 12px;border-radius:13px;font-size:12px}
+main{max-width:1250px;margin:18px auto;padding:0 14px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+.panel,.mapbox{background:var(--card);border:1px solid var(--line);border-radius:19px;box-shadow:0 8px 26px #5d48200d;overflow:hidden}
+.panel{padding:15px}
+.search{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:12px;font:inherit;outline:none;background:#fff}
+.search:focus{border-color:var(--gold)}
+.filters{display:flex;gap:7px;flex-wrap:wrap;margin:11px 0}
+.chip{border:1px solid var(--line);background:#fff;color:#665333;border-radius:20px;padding:7px 10px;font:inherit;font-size:11px;cursor:pointer}
+.chip.active{background:#f7edcf;color:#795517;border-color:#d9b85e}
+.list{max-height:650px;overflow:auto;padding-left:2px}
+.country{padding:11px 9px;border-bottom:1px solid #f2eadb;cursor:pointer;border-radius:10px}
+.country:hover,.country.selected{background:#fbf3df}
+.country.selected{outline:1px solid #e6cf91}
+.country strong{font-size:13px}.country small{display:block;color:var(--muted);font-size:11px;margin-top:5px}
+.mapbox{position:sticky;top:10px;z-index:5}
+.maphead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 15px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.maphead b{font-size:14px}
+.btn{border:0;background:linear-gradient(135deg,#9d7025,#c59b48);color:white;padding:10px 13px;border-radius:11px;font:inherit;font-size:12px;cursor:pointer}
+.btn.secondary{background:#f7edcf;color:#795517;border:1px solid #e6d19c}
+.btn:disabled{opacity:.55;cursor:wait}
+#map{height:min(72vh,690px);min-height:480px;width:100%;background:#eee5d3;z-index:1}
+.note{padding:10px 14px;color:var(--muted);font-size:11px;line-height:1.8}
+.status{font-size:11px;color:var(--green);margin-top:9px;min-height:18px}
+.leaflet-popup-content{font-family:Tahoma,Arial,sans-serif;line-height:1.8;text-align:right}
+@media(max-width:800px){
+ main{grid-template-columns:1fr;gap:12px}
+ .mapbox{position:sticky;top:5px;order:0}
+ .panel{order:1}
+ #map{height:48vh;min-height:290px;max-height:430px}
+ .list{max-height:none}
+ h1{font-size:20px}
+ .profilebar{padding:9px 10px}
+ .profile img{width:58px;height:58px}
+ .profile strong{font-size:12px}
+ .profile .role{font-size:10px}
+}
+@media(max-width:390px){.profilebar{gap:6px}.profile{gap:6px}.profile strong{font-size:11px}.profile img{width:50px;height:50px}}
+
+.country-info{padding:16px;background:linear-gradient(135deg,#fffdf8,#f8efd9);border-top:1px solid var(--line);min-height:112px}
+.empty-info{color:var(--muted);font-size:12px;text-align:center;padding:20px 8px}
+.info-layout{display:flex;align-items:center;gap:16px;direction:ltr}
+.country-flag{width:116px;height:76px;object-fit:contain;background:#fff;border:1px solid #e7dcc5;border-radius:12px;padding:5px;box-shadow:0 4px 14px #6b50151a;flex:0 0 auto}
+.info-content{flex:1;min-width:0;direction:ltr;text-align:left}
+.info-content h2{font-size:20px;color:#76551d;margin:0 0 10px}
+.info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.info-field{background:#fff;border:1px solid #eee2c8;border-radius:10px;padding:9px 10px;min-width:0}
+.info-field span{display:block;color:#927c56;font-size:10px;margin-bottom:4px}
+.info-field strong{font-size:13px;color:#342a1a;overflow-wrap:anywhere}
+@media(max-width:480px){.country-info{padding:12px}.info-layout{gap:10px}.country-flag{width:88px;height:64px}.info-content h2{font-size:17px}.info-grid{grid-template-columns:1fr 1fr;gap:6px}.info-field{padding:8px}.info-field strong{font-size:11px}}
+
+
+.flag-wrap{display:flex;flex-direction:column;align-items:center;gap:7px;flex:0 0 auto}
+.flag-btn{position:relative;border:0;background:none;padding:0;cursor:pointer;border-radius:12px;line-height:0;-webkit-tap-highlight-color:transparent}
+.flag-btn .country-flag{transition:transform .15s,box-shadow .2s,border-color .2s;display:block}
+.flag-btn:hover .country-flag{transform:scale(1.03)}
+.flag-btn:active .country-flag{transform:scale(.97)}
+.flag-btn:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.flag-btn.loading .country-flag{border-color:var(--gold2);animation:flagpulse .8s ease-in-out infinite}
+.flag-btn.playing .country-flag{border-color:var(--gold);box-shadow:0 0 0 3px #e4c77d99,0 4px 18px #b8893366;animation:flagpulse 1.6s ease-in-out infinite}
+.flag-badge{position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#9d7025,#c59b48);color:#fff;font-size:13px;line-height:24px;text-align:center;box-shadow:0 2px 6px #0003}
+.flag-btn.loading .flag-badge{font-size:0;border:3px solid #ffffff80;border-top-color:#fff;animation:flagspin .7s linear infinite}
+.flag-hint{font-size:10px;color:var(--muted);direction:rtl;text-align:center;max-width:120px;line-height:1.6}
+.word{border:0;background:none;padding:0 0 1px;margin:0;font:inherit;color:inherit;cursor:pointer;border-bottom:1px dashed #cdb27a;text-align:left;-webkit-tap-highlight-color:transparent;border-radius:3px}
+.word:hover{color:#795517;border-bottom-style:solid}
+.word:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.word.speaking{background:#f7edcf;color:#795517;box-shadow:0 0 0 3px #f7edcf}
+.word-plain{color:#927c56;font-weight:normal}
+.info-content h2 .word{color:#76551d}
+@keyframes flagpulse{50%{transform:scale(1.04)}}
+@keyframes flagspin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.flag-btn .country-flag,.flag-badge{animation:none!important}}
+</style>
+</head>
+<body>
+<header>
+<div class="profilebar" dir="ltr">
+  <div class="profile teacher">
+    <img src="data:image/jpeg;base64,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" alt="Instructor">
+    <div class="profile-details">
+      <span class="role">Instructor</span>
+      <strong>Mr. Siahpoosh</strong>
+    </div>
+  </div>
+  <div class="profile student">
+    <div class="profile-details">
+      <span class="role">Student</span>
+      <strong>Arezoo Ahmadpour</strong>
+    </div>
+  </div>
+</div>
+</header>
+<main>
+<section class="mapbox">
+<div class="maphead"><b>📍 نقشه جهان و پایتخت‌ها</b><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn secondary" id="speakSelected" disabled>🔊 پخش نام انتخابی</button><button class="btn" id="locate">مکان‌یابی من</button></div></div>
+<div id="map"></div>
+
+<div class="country-info" id="countryInfo" aria-live="polite">
+  
+</div>
+
+
+</section>
+<section class="panel">
+<input id="search" class="search" placeholder="جست‌وجوی کشور یا پایتخت..." autocomplete="off">
+<div class="filters" id="filters"></div>
+<div class="list" id="list"></div>
+<div class="status" id="status" aria-live="polite"></div>
+</section>
+</main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const countries = [
+["France","فرانسه","Paris","پاریس","اروپا",48.8566,2.3522],
+["Germany","آلمان","Berlin","برلین","اروپا",52.52,13.405],
+["Italy","ایتالیا","Rome","رم","اروپا",41.9028,12.4964],
+["Spain","اسپانیا","Madrid","مادرید","اروپا",40.4168,-3.7038],
+["United Kingdom","بریتانیا","London","لندن","اروپا",51.5072,-0.1276],
+["Switzerland","سوئیس","Bern","برن","اروپا",46.948,7.4474],
+["Netherlands","هلند","Amsterdam","آمستردام","اروپا",52.3676,4.9041],
+["Russia","روسیه","Moscow","مسکو","اروپا",55.7558,37.6173],
+["China","چین","Beijing","پکن","آسیا",39.9042,116.4074],
+["Japan","ژاپن","Tokyo","توکیو","آسیا",35.6762,139.6503],
+["South Korea","کره جنوبی","Seoul","سئول","آسیا",37.5665,126.978],
+["India","هند","New Delhi","دهلی نو","آسیا",28.6139,77.209],
+["Iran","ایران","Tehran","تهران","آسیا",35.6892,51.389],
+["Turkey","ترکیه","Ankara","آنکارا","آسیا",39.9334,32.8597],
+["Saudi Arabia","عربستان","Riyadh","ریاض","آسیا",24.7136,46.6753],
+["United Arab Emirates","امارات","Abu Dhabi","ابوظبی","آسیا",24.4539,54.3773],
+["Qatar","قطر","Doha","دوحه","آسیا",25.2854,51.531],
+["Iraq","عراق","Baghdad","بغداد","آسیا",33.3152,44.3661],
+["Pakistan","پاکستان","Islamabad","اسلام‌آباد","آسیا",33.6844,73.0479],
+["Afghanistan","افغانستان","Kabul","کابل","آسیا",34.5553,69.2075],
+["Singapore","سنگاپور","Singapore","سنگاپور","آسیا",1.3521,103.8198],
+["Thailand","تایلند","Bangkok","بانکوک","آسیا",13.7563,100.5018],
+["Indonesia","اندونزی","Jakarta","جاکارتا","آسیا",-6.2088,106.8456],
+["United States","آمریکا","Washington, D.C.","واشنگتن","آمریکای شمالی",38.9072,-77.0369],
+["Canada","کانادا","Ottawa","اتاوا","آمریکای شمالی",45.4215,-75.6972],
+["Mexico","مکزیک","Mexico City","مکزیکوسیتی","آمریکای شمالی",19.4326,-99.1332],
+["Brazil","برزیل","Brasília","برازیلیا","آمریکای جنوبی",-15.7939,-47.8828],
+["Argentina","آرژانتین","Buenos Aires","بوئنوس آیرس","آمریکای جنوبی",-34.6037,-58.3816],
+["Chile","شیلی","Santiago","سانتیاگو","آمریکای جنوبی",-33.4489,-70.6693],
+["Colombia","کلمبیا","Bogotá","بوگوتا","آمریکای جنوبی",4.711,-74.0721],
+["Peru","پرو","Lima","لیما","آمریکای جنوبی",-12.0464,-77.0428],
+["Egypt","مصر","Cairo","قاهره","آفریقا",30.0444,31.2357],
+["South Africa","آفریقای جنوبی","Pretoria","پرتوریا","آفریقا",-25.7479,28.2293],
+["Nigeria","نیجریه","Abuja","آبوجا","آفریقا",9.0765,7.3986],
+["Morocco","مراکش","Rabat","رباط","آفریقا",34.0209,-6.8416],
+["Kenya","کنیا","Nairobi","نایروبی","آفریقا",-1.2921,36.8219],
+["Ethiopia","اتیوپی","Addis Ababa","آدیس‌آبابا","آفریقا",8.9806,38.7578],
+["Australia","استرالیا","Canberra","کانبرا","اقیانوسیه",-35.2809,149.13],
+["New Zealand","نیوزیلند","Wellington","ولینگتون","اقیانوسیه",-41.2866,174.7756]
+];
+const countryDetails = {"France": ["French", "French", "fr"], "Germany": ["German", "German", "de"], "Italy": ["Italian", "Italian", "it"], "Spain": ["Spanish", "Spanish", "es"], "United Kingdom": ["British", "English", "gb"], "Switzerland": ["Swiss", "German, French, Italian, Romansh", "ch"], "Netherlands": ["Dutch", "Dutch", "nl"], "Russia": ["Russian", "Russian", "ru"], "China": ["Chinese", "Mandarin Chinese", "cn"], "Japan": ["Japanese", "Japanese", "jp"], "South Korea": ["South Korean", "Korean", "kr"], "India": ["Indian", "Hindi, English", "in"], "Iran": ["Iranian", "Persian", "ir"], "Turkey": ["Turkish", "Turkish", "tr"], "Saudi Arabia": ["Saudi Arabian", "Arabic", "sa"], "United Arab Emirates": ["Emirati", "Arabic", "ae"], "Qatar": ["Qatari", "Arabic", "qa"], "Iraq": ["Iraqi", "Arabic, Kurdish", "iq"], "Pakistan": ["Pakistani", "Urdu, English", "pk"], "Afghanistan": ["Afghan", "Dari, Pashto", "af"], "Singapore": ["Singaporean", "English, Malay, Mandarin Chinese, Tamil", "sg"], "Thailand": ["Thai", "Thai", "th"], "Indonesia": ["Indonesian", "Indonesian", "id"], "United States": ["American", "English", "us"], "Canada": ["Canadian", "English, French", "ca"], "Mexico": ["Mexican", "Spanish", "mx"], "Brazil": ["Brazilian", "Portuguese", "br"], "Argentina": ["Argentine", "Spanish", "ar"], "Chile": ["Chilean", "Spanish", "cl"], "Colombia": ["Colombian", "Spanish", "co"], "Peru": ["Peruvian", "Spanish", "pe"], "Egypt": ["Egyptian", "Arabic", "eg"], "South Africa": ["South African", "Zulu, Xhosa, Afrikaans, English, and others", "za"], "Nigeria": ["Nigerian", "English", "ng"], "Morocco": ["Moroccan", "Arabic, Amazigh", "ma"], "Kenya": ["Kenyan", "Swahili, English", "ke"], "Ethiopia": ["Ethiopian", "Amharic", "et"], "Australia": ["Australian", "English", "au"], "New Zealand": ["New Zealander", "English, Māori, New Zealand Sign Language", "nz"]};
+const regions=["همه","اروپا","آسیا","آمریکای شمالی","آمریکای جنوبی","آفریقا","اقیانوسیه"];
+const map=L.map('map',{worldCopyJump:true}).setView([25,15],2);
+const tiles=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'&copy; OpenStreetMap',crossOrigin:true}).addTo(map);
+tiles.on('tileerror',()=>{status.textContent='بارگذاری نقشه به اتصال اینترنت نیاز دارد؛ اتصال را بررسی و صفحه را دوباره باز کن.';});
+const markers=[];
+countries.forEach((c,i)=>{
+ const marker=L.marker([c[5],c[6]]).addTo(map).bindPopup(`<b>${c[1]} (${c[0]})</b><br>پایتخت: ${c[3]} (${c[2]})`);
+ markers.push(marker);
+ marker.on('click',()=>selectCountry(i,false));
+});
+let region="همه", selected=0;
+const filters=document.getElementById('filters'), list=document.getElementById('list'), search=document.getElementById('search'), status=document.getElementById('status');
+regions.forEach(r=>{const b=document.createElement('button');b.className='chip'+(r==="همه"?' active':'');b.textContent=r;b.onclick=()=>{region=r;[...filters.children].forEach(x=>x.classList.toggle('active',x.textContent===r));render()};filters.appendChild(b)});
+function render(){
+ const q=search.value.trim().toLowerCase();list.innerHTML='';
+ countries.forEach((c,i)=>{
+  if(region!=="همه"&&c[4]!==region)return;
+  if(q&&!c.slice(0,4).join(' ').toLowerCase().includes(q))return;
+  const d=document.createElement('div');d.className='country'+(selected===i?' selected':'');
+  d.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div><strong>${c[1]} <span style="color:#718096;font-weight:normal">(${c[0]})</span></strong><small>پایتخت: ${c[3]} · ${c[2]}</small></div><button class="chip" aria-label="تلفظ نام کشور و پایتخت" title="شنیدن تلفظ" style="font-size:17px;padding:7px 9px">🔊</button></div>`;
+  d.onclick=()=>selectCountry(i,true);
+  d.querySelector('button').onclick=(ev)=>{ev.stopPropagation();speakCountry(i)};
+  list.appendChild(d);
+ });
+}
+function speakCountry(i){
+ const c=countries[i];
+ if(!('speechSynthesis' in window)){status.textContent="پخش صدا در این مرورگر پشتیبانی نمی‌شود.";return}
+ speechSynthesis.cancel();
+ stopAnthem();
+ const en=new SpeechSynthesisUtterance(`${c[0]}. Capital: ${c[2]}.`);
+ en.lang='en-US';en.rate=.88;
+ speechSynthesis.speak(en);
+ const fa=new SpeechSynthesisUtterance(`${c[1]}، پایتخت: ${c[3]}`);
+ fa.lang='fa-IR';fa.rate=.85;
+ speechSynthesis.speak(fa);
+ status.textContent=`در حال پخش تلفظ انگلیسی و فارسی؛ صدا از موتور گفتار دستگاه پخش می‌شود.`;
+}
+
+/* ===== Pronunciation: tap a word (no speaker icon) ===== */
+let enVoice=null;
+function pickVoice(){
+ if(!('speechSynthesis' in window))return;
+ const vs=speechSynthesis.getVoices();if(!vs.length)return;
+ const en=vs.filter(v=>/^en[-_]/i.test(v.lang));
+ enVoice=en.find(v=>/^en[-_]US/i.test(v.lang)&&/Google|Samantha|Microsoft|Natural|Premium|Enhanced/i.test(v.name))||en.find(v=>/^en[-_]US/i.test(v.lang))||en[0]||null;
+}
+if('speechSynthesis' in window){pickVoice();if(speechSynthesis.addEventListener)speechSynthesis.addEventListener('voiceschanged',pickVoice);else speechSynthesis.onvoiceschanged=pickVoice}
+const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const speakable=t=>t.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[.,]/g,' ').replace(/\s+/g,' ').trim();
+let speakingEl=null;
+function sayWord(text,el){
+ if(!('speechSynthesis' in window)){status.textContent='پخش صدا در این مرورگر پشتیبانی نمی‌شود.';return}
+ stopAnthem();
+ const busy=speechSynthesis.speaking||speechSynthesis.pending;
+ speechSynthesis.cancel();
+ if(speakingEl)speakingEl.classList.remove('speaking');
+ speakingEl=el;el.classList.add('speaking');
+ const u=new SpeechSynthesisUtterance(speakable(text));
+ u.lang=enVoice?enVoice.lang:'en-US';if(enVoice)u.voice=enVoice;u.rate=.85;
+ const done=()=>{el.classList.remove('speaking');if(speakingEl===el)speakingEl=null};
+ u.onend=done;u.onerror=done;
+ if(busy)setTimeout(()=>speechSynthesis.speak(u),60);else speechSynthesis.speak(u);
+}
+
+/* ===== National anthem: tap the flag ===== */
+// If you download the mp3 files (fr.mp3, de.mp3 ...) next to this page, put the folder here, e.g. 'anthems/'
+const LOCAL_ANTHEM_DIR='';
+const ANTHEM_HOSTS=['https://nationalanthems.info/','https://www.nationalanthems.info/'];
+const anthemCache={};let anthemNow=null;
+function anthemSources(code){const s=ANTHEM_HOSTS.map(h=>h+code+'.mp3');if(LOCAL_ANTHEM_DIR)s.unshift(LOCAL_ANTHEM_DIR+code+'.mp3');return s}
+function getAnthem(code){
+ let a=anthemCache[code];if(a&&!a.failed)return a;
+ const srcs=anthemSources(code);let n=0;
+ a=new Audio();a.preload='auto';a.failed=false;
+ a.addEventListener('error',()=>{
+  if(++n<srcs.length){a.src=srcs[n];a.load();if(anthemNow&&anthemNow.audio===a)a.play().catch(()=>{});return}
+  a.failed=true;
+  if(anthemNow&&anthemNow.audio===a){anthemNow=null;setFlagState(code,'idle');status.textContent='سرود این کشور بارگذاری نشد؛ اتصال اینترنت را بررسی کن.'}
+ });
+ a.src=srcs[0];anthemCache[code]=a;return a;
+}
+function setFlagState(code,state){
+ const b=document.getElementById('flagBtn');if(!b||b.dataset.code!==code)return;
+ b.classList.toggle('loading',state==='loading');b.classList.toggle('playing',state==='playing');
+}
+function stopAnthem(){
+ if(!anthemNow)return;
+ const {audio,code}=anthemNow;anthemNow=null;
+ try{audio.pause();audio.currentTime=0}catch(e){}
+ setFlagState(code,'idle');
+}
+function playAnthem(i){
+ const c=countries[i],d=countryDetails[c[0]];if(!d)return;const code=d[2];
+ if(anthemNow&&anthemNow.code===code){stopAnthem();status.textContent='';return}
+ stopAnthem();
+ if('speechSynthesis' in window)speechSynthesis.cancel();
+ const a=getAnthem(code);
+ anthemNow={audio:a,code};
+ setFlagState(code,'loading');
+ status.textContent=`در حال پخش سرود ملی ${c[1]}...`;
+ a.onplaying=()=>{if(anthemNow&&anthemNow.audio===a)setFlagState(code,'playing')};
+ a.onwaiting=()=>{if(anthemNow&&anthemNow.audio===a)setFlagState(code,'loading')};
+ a.onended=()=>{if(anthemNow&&anthemNow.audio===a)anthemNow=null;setFlagState(code,'idle');status.textContent=''};
+ try{a.currentTime=0}catch(e){}
+ const p=a.play();
+ if(p&&p.catch)p.catch(err=>{
+  if(err&&(err.name==='AbortError'||(err.name==='NotSupportedError'&&!a.failed)))return;
+  if(anthemNow&&anthemNow.audio===a){anthemNow=null;setFlagState(code,'idle');status.textContent='پخش سرود انجام نشد؛ دوباره روی پرچم بزن.'}
+ });
+}
+
+function wordBtn(t){return `<button type="button" class="word" data-say="${esc(t)}">${esc(t)}</button>`}
+function showCountryInfo(i){
+ stopAnthem();
+ const c=countries[i], d=countryDetails[c[0]];
+ const info=document.getElementById('countryInfo');
+ if(!d){info.innerHTML='<div class="empty-info">اطلاعات این کشور در دسترس نیست.</div>';return}
+ const [nationality,language,code]=d;
+ const langs=language.split(/,\s*/).map(l=>/^and\s/i.test(l)?`<span class="word-plain">${esc(l)}</span>`:wordBtn(l)).join('<span class="word-plain">, </span>');
+ info.innerHTML=`<div class="info-layout">
+   <div class="flag-wrap">
+    <button type="button" class="flag-btn" id="flagBtn" data-code="${code}" data-idx="${i}" aria-label="پخش سرود ملی ${c[1]}">
+     <img class="country-flag" src="https://flagcdn.com/w160/${code}.png" srcset="https://flagcdn.com/w320/${code}.png 2x" alt="${c[0]} flag">
+     <span class="flag-badge">♪</span>
+    </button>
+    <div class="flag-hint">برای شنیدن سرود ملی، روی پرچم بزن</div>
+   </div>
+   <div class="info-content">
+    <h2>${wordBtn(c[0])}</h2>
+    <div class="info-grid">
+     <div class="info-field"><span>Nationality</span><strong>${wordBtn(nationality)}</strong></div>
+     <div class="info-field"><span>Language</span><strong>${langs}</strong></div>
+     <div class="info-field"><span>Capital</span><strong>${wordBtn(c[2])}</strong></div>
+     <div class="info-field"><span>Country</span><strong>${wordBtn(c[0])}</strong></div>
+    </div>
+   </div>
+  </div>`;
+ // Preload the anthem right away so the first tap on the flag starts almost instantly
+ setTimeout(()=>{if(selected===i)getAnthem(code)},300);
+}
+document.getElementById('countryInfo').addEventListener('click',e=>{
+ const w=e.target.closest('.word');
+ if(w){sayWord(w.dataset.say,w);return}
+ const f=e.target.closest('#flagBtn');
+ if(f)playAnthem(+f.dataset.idx);
+});
+
+function selectCountry(i,zoom){
+ selected=i;render();showCountryInfo(i);
+ document.getElementById('speakSelected').disabled=false;
+ if(zoom){map.flyTo([countries[i][5],countries[i][6]],5,{duration:1});markers[i].openPopup()}
+}
+document.getElementById('speakSelected').onclick=()=>{if(selected>=0)speakCountry(selected)};
+search.addEventListener('input',render);
+document.getElementById('locate').onclick=()=>{
+ status.textContent="در حال دریافت موقعیت مکانی...";
+ if(!navigator.geolocation){status.textContent="مرورگر شما از مکان‌یابی پشتیبانی نمی‌کند.";return}
+ navigator.geolocation.getCurrentPosition(pos=>{
+  const lat=pos.coords.latitude,lon=pos.coords.longitude;
+  if(window.userMarker)map.removeLayer(window.userMarker);
+  window.userMarker=L.circleMarker([lat,lon],{radius:9,color:'#fff',weight:3,fillColor:'#0f9d78',fillOpacity:1}).addTo(map).bindPopup("موقعیت فعلی شما").openPopup();
+  map.flyTo([lat,lon],6,{duration:1});
+  status.textContent="موقعیت شما روی نقشه مشخص شد.";
+ },err=>{
+  status.textContent=err.code===1?"دسترسی مکان‌یابی رد شد؛ مجوز Location را فعال کن.":"موقعیت دریافت نشد؛ GPS و اتصال اینترنت را بررسی کن.";
+ },{enableHighAccuracy:true,timeout:12000,maximumAge:60000});
+};
+render();
+showCountryInfo(selected);
+// Give the map container time to settle before Leaflet calculates its dimensions.
+setTimeout(()=>map.invalidateSize(true),250);
+window.addEventListener('load',()=>setTimeout(()=>map.invalidateSize(true),400));
+</script>
+</body>
+</html>
